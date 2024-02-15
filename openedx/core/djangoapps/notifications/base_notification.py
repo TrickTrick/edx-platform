@@ -8,6 +8,7 @@ from ..django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_
 
 FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE = 'filter_audit_expired_users_with_no_role'
 
+
 COURSE_NOTIFICATION_TYPES = {
     'new_comment_on_response': {
         'notification_app': 'discussion',
@@ -56,6 +57,7 @@ COURSE_NOTIFICATION_TYPES = {
         'info': '',
         'web': False,
         'email': False,
+        'email_cadence': 'Daily',
         'push': False,
         'non_editable': [],
         'content_template': _('<{p}><{strong}>{username}</{strong}> posted <{strong}>{post_title}</{strong}></{p}>'),
@@ -73,6 +75,7 @@ COURSE_NOTIFICATION_TYPES = {
         'info': '',
         'web': False,
         'email': False,
+        'email_cadence': 'Daily',
         'push': False,
         'non_editable': [],
         'content_template': _('<{p}><{strong}>{username}</{strong}> asked <{strong}>{post_title}</{strong}></{p}>'),
@@ -121,6 +124,7 @@ COURSE_NOTIFICATION_TYPES = {
         'info': '',
         'web': True,
         'email': True,
+        'email_cadence': 'Daily',
         'push': True,
         'non_editable': [],
         'content_template': _('<p><strong>{username}’s </strong> {content_type} has been reported <strong> {'
@@ -172,6 +176,7 @@ COURSE_NOTIFICATION_APPS = {
         'core_web': True,
         'core_email': True,
         'core_push': True,
+        'core_email_cadence': 'Daily',
         'non_editable': ['web']
     }
 }
@@ -239,6 +244,7 @@ class NotificationPreferenceSyncManager:
                 'push': preference.get('push'),
                 'email': preference.get('email'),
                 'info': preference.get('info'),
+                'email_cadence': preference.get('email_cadence'),
             }
         return denormalized_preferences
 
@@ -273,8 +279,8 @@ class NotificationPreferenceSyncManager:
             app_name = preference.get('app_name')
             pref = find_pref_in_normalized_prefs(pref_name, app_name, old_preferences.get('preferences'))
             if pref:
-                for channel in ['web', 'email', 'push']:
-                    preference[channel] = pref[channel]
+                for channel in ['web', 'email', 'push', 'email_cadence']:
+                    preference[channel] = pref.get(channel, preference.get(channel))
         return NotificationPreferenceSyncManager.denormalize_preferences(new_prefs)
 
 
@@ -332,6 +338,7 @@ class NotificationTypeManager:
                 'web': notification_type.get('web', False),
                 'email': notification_type.get('email', False),
                 'push': notification_type.get('push', False),
+                'email_cadence': notification_type.get('email_cadence', 'Daily'),
             }
         return non_core_notification_type_preferences
 
@@ -363,6 +370,7 @@ class NotificationAppManager:
             'web': notification_app_attrs.get('core_web', False),
             'email': notification_app_attrs.get('core_email', False),
             'push': notification_app_attrs.get('core_push', False),
+            'email_cadence': notification_app_attrs.get('core_email_cadence', 'Daily'),
         }
 
     def add_core_notification_non_editable(self, notification_app_attrs, non_editable_channels):

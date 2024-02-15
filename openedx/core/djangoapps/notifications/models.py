@@ -18,10 +18,10 @@ from openedx.core.djangoapps.notifications.base_notification import (
 User = get_user_model()
 log = logging.getLogger(__name__)
 
-NOTIFICATION_CHANNELS = ['web', 'push', 'email']
+NOTIFICATION_CHANNELS = ['web', 'push', 'email', 'email_cadence']
 
 # Update this version when there is a change to any course specific notification type or app.
-COURSE_NOTIFICATION_CONFIG_VERSION = 6
+COURSE_NOTIFICATION_CONFIG_VERSION = 7
 
 
 def get_course_notification_preference_config():
