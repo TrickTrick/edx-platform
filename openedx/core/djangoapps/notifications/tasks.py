@@ -132,9 +132,10 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
         for preference in preferences:
             user_id = preference.user_id
             preference = update_user_preference(preference, user_id, course_key)
+
             if (
                 preference and
-                preference.get_web_config(app_name, notification_type) and
+                preference.is_enabled_for_any_channel(app_name, notification_type) and
                 preference.get_app_config(app_name).get('enabled', False)
             ):
                 notifications.append(
@@ -145,6 +146,7 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
                         content_context=context,
                         content_url=content_url,
                         course_id=course_key,
+                        channels=preference.get_channels_for_notification_type(app_name, notification_type)
                     )
                 )
                 generated_notification_audience.append(user_id)

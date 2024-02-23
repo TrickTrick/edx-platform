@@ -4,7 +4,7 @@ Views for the notifications API.
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from opaque_keys.edx.keys import CourseKey
@@ -332,16 +332,15 @@ class NotificationListAPIView(generics.ListAPIView):
             notification_tray_opened_event(self.request.user, unseen_count)
 
         if app_name:
-            return Notification.objects.filter(
+            query_set = Notification.objects.filter(
+                Q(channels__icontains='web') | Q(channels__isnull=True),
                 user=self.request.user,
                 app_name=app_name,
                 created__gte=expiry_date,
             ).order_by('-id')
+            return query_set
         else:
-            return Notification.objects.filter(
-                user=self.request.user,
-                created__gte=expiry_date,
-            ).order_by('-id')
+            return Notification.objects.filter(user=self.request.user, created__gte=expiry_date,).order_by('-id')
 
 
 @allow_any_authenticated_user()

@@ -5,6 +5,7 @@ import logging
 from typing import Dict
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
@@ -84,6 +85,14 @@ def get_notification_channels():
     return NOTIFICATION_CHANNELS
 
 
+def validate_channels(value):
+    for channel in value:
+        if channel not in NOTIFICATION_CHANNELS:
+            raise ValidationError(
+                f'{value} is not a valid channel.'
+            )
+
+
 class Notification(TimeStampedModel):
     """
     Model to store notifications for users
@@ -96,6 +105,7 @@ class Notification(TimeStampedModel):
     notification_type = models.CharField(max_length=64)
     content_context = models.JSONField(default=dict)
     content_url = models.URLField(null=True, blank=True)
+    channels = models.JSONField(null=True, validators=[validate_channels])
     last_read = models.DateTimeField(null=True, blank=True)
     last_seen = models.DateTimeField(null=True, blank=True)
 
@@ -204,6 +214,24 @@ class CourseNotificationPreference(TimeStampedModel):
         if self.is_core(app_name, notification_type):
             return self.get_core_config(app_name).get('web', False)
         return self.get_notification_type_config(app_name, notification_type).get('web', False)
+
+    def is_enabled_for_any_channel(self, app_name, notification_type) -> bool:
+        """
+        Returns True if the notification type is enabled for any channel.
+        """
+        if self.is_core(app_name, notification_type):
+            return any(self.get_core_config(app_name).get(channel, False) for channel in NOTIFICATION_CHANNELS)
+        return any(self.get_notification_type_config(app_name, notification_type).get(channel, False) for channel in
+                   NOTIFICATION_CHANNELS)
+
+    def get_channels_for_notification_type(self, app_name, notification_type) -> list:
+        """
+        Returns the channels for the given app name and notification type.
+        Sample Response:
+        ['web', 'push']
+        """
+        return [channel for channel in NOTIFICATION_CHANNELS if
+                self.get_notification_type_config(app_name, notification_type).get(channel, False)]
 
     def is_core(self, app_name, notification_type) -> bool:
         """

@@ -513,8 +513,7 @@ class UserNotificationChannelPreferenceAPITest(ModuleStoreTestCase):
         if expected_status == status.HTTP_200_OK:
             expected_data = self._expected_api_response()
             expected_app_prefs = expected_data['notification_preference_config'][notification_app]
-            for notification_type_name, notification_type_preferences in expected_app_prefs[
-                    'notification_types'].items():
+            for notification_type_name, notification_type_preferences in (expected_app_prefs['notification_types'].items()):
                 non_editable_channels = expected_app_prefs['non_editable'].get(notification_type_name, [])
                 if notification_channel not in non_editable_channels:
                     expected_app_prefs['notification_types'][notification_type_name][notification_channel] = value
@@ -527,6 +526,7 @@ class UserNotificationChannelPreferenceAPITest(ModuleStoreTestCase):
             self.assertEqual(event_data['value'], value)
 
 
+@ddt.ddt
 class NotificationListAPIViewTest(APITestCase):
     """
     Tests suit for the NotificationListAPIView.
@@ -605,6 +605,43 @@ class NotificationListAPIViewTest(APITestCase):
             data[0]['content'],
             '<p><strong>test_user</strong> responded to your post <strong>This is a test post.</strong></p>'
         )
+
+    @ddt.data(
+        (None, 1),
+        ([], 0),
+        (['web'], 1),
+        (['email'], 0),
+        (['web', 'email'], 1),
+        (['web', 'email', 'push'], 1),
+    )
+    @ddt.unpack
+    def test_list_notifications_with_channels(self, channels, expected_count):
+        """
+        Test that the view can filter notifications by app name and channels.
+        """
+        # Create two notifications for the user, one for each app name.
+        Notification.objects.create(
+            user=self.user,
+            app_name='discussion',
+            notification_type='new_response',
+            content_context={
+                'replier_name': 'test_user',
+                'post_title': 'This is a test post.',
+            },
+            channels=channels
+        )
+
+        self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
+
+        # Make a request to the view with the app_name query parameter set to 'app1'.
+        response = self.client.get(self.url + "?app_name=discussion")
+
+        # Assert that the response is successful.
+        self.assertEqual(response.status_code, 200)
+
+        # Assert that the response contains expected results i.e. channels contains web or is null.
+        data = response.data['results']
+        self.assertEqual(len(data), expected_count)
 
     @mock.patch("eventtracking.tracker.emit")
     def test_list_notifications_with_tray_opened_param(self, mock_emit):

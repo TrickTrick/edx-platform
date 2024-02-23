@@ -224,6 +224,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             'content_context',
             'content',
             'content_url',
+            'channels',
             'last_read',
             'last_seen',
             'created',

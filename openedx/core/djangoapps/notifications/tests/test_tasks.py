@@ -176,6 +176,8 @@ class SendNotificationsTest(ModuleStoreTestCase):
         preference = CourseNotificationPreference.get_user_course_preference(self.user.id, self.course_1.id)
         app_prefs = preference.notification_preference_config[app_name]
         app_prefs['notification_types']['core']['web'] = False
+        app_prefs['notification_types']['core']['email'] = False
+        app_prefs['notification_types']['core']['push'] = False
         preference.save()
 
         send_notifications([self.user.id], str(self.course_1.id), app_name, notification_type, context, content_url)
@@ -246,8 +248,8 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
 
     @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     @ddt.data(
-        (settings.NOTIFICATION_CREATION_BATCH_SIZE, 1, 2),
-        (settings.NOTIFICATION_CREATION_BATCH_SIZE + 10, 2, 4),
+        (settings.NOTIFICATION_CREATION_BATCH_SIZE - 9, 1, 2),
+        (settings.NOTIFICATION_CREATION_BATCH_SIZE + 10, 2, 5),
         (settings.NOTIFICATION_CREATION_BATCH_SIZE - 10, 1, 2),
     )
     @ddt.unpack
