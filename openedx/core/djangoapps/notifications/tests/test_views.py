@@ -513,10 +513,10 @@ class UserNotificationChannelPreferenceAPITest(ModuleStoreTestCase):
         if expected_status == status.HTTP_200_OK:
             expected_data = self._expected_api_response()
             expected_app_prefs = expected_data['notification_preference_config'][notification_app]
-            for notification_type_name, notification_type_preferences in (expected_app_prefs['notification_types'].items()):
-                non_editable_channels = expected_app_prefs['non_editable'].get(notification_type_name, [])
+            for notification_type, __ in expected_app_prefs['notification_types'].items():
+                non_editable_channels = expected_app_prefs['non_editable'].get(notification_type, [])
                 if notification_channel not in non_editable_channels:
-                    expected_app_prefs['notification_types'][notification_type_name][notification_channel] = value
+                    expected_app_prefs['notification_types'][notification_type][notification_channel] = value
             expected_data = remove_notifications_with_visibility_settings(expected_data)
             self.assertEqual(response.data, expected_data)
             event_name, event_data = mock_emit.call_args[0]
